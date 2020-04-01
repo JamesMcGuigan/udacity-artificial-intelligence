@@ -5,7 +5,7 @@ own additional test cases to cover any failed tests shown in the Project Assista
 """
 import unittest
 import solution
-
+from utils import display
 
 class TestNakedTwins(unittest.TestCase):
     before_naked_twins_1 = {'I6': '4', 'H9': '3', 'I2': '6', 'E8': '1', 'H3': '5', 'H7': '8', 'I7': '1', 'I4': '8',
@@ -83,6 +83,7 @@ class TestNakedTwins(unittest.TestCase):
 
 
 class TestDiagonalSudoku(unittest.TestCase):
+    maxDiff = None
     diagonal_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
     solved_diag_sudoku = {'G7': '8', 'G6': '9', 'G5': '7', 'G4': '3', 'G3': '2', 'G2': '4', 'G1': '6', 'G9': '5',
                           'G8': '1', 'C9': '6', 'C8': '7', 'C3': '1', 'C2': '9', 'C1': '4', 'C7': '5', 'C6': '3',
@@ -97,6 +98,11 @@ class TestDiagonalSudoku(unittest.TestCase):
                           'D1': '5'}
 
     def test_solve(self):
+        # solved = solution.solve(self.diagonal_grid)
+        # print('solution')
+        # display(solved)
+        # print('answer')
+        # display(self.solved_diag_sudoku)
         self.assertEqual(solution.solve(self.diagonal_grid), self.solved_diag_sudoku)
 
 if __name__ == '__main__':

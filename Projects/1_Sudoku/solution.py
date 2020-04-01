@@ -2,18 +2,42 @@
 from utils import *
 
 
-row_units = [cross(r, cols) for r in rows]
+row_units    = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
-unitlist = row_units + column_units + square_units
+unitlist     = row_units + column_units + square_units
 
 # TODO: Update the unit list to add the new diagonal units
-unitlist = unitlist
+diagonals    = [
+    [ rows[i] + cols[i]      for i in range(len(rows)) ],
+    [ rows[i] + cols[-(i+1)] for i in range(len(rows)) ],
+]
+unitlist     = unitlist + diagonals
 
 
 # Must be called after all units (including diagonals) are added to the unitlist
 units = extract_units(unitlist, boxes)
 peers = extract_peers(units, boxes)
+
+
+def hash_values(values):
+    return str(sorted(values.items()))
+
+def is_singleton(values):
+    return all(map(lambda value: len(value) == 1, values.values()))
+
+def is_valid(values):
+    if not all(map(len, values.values())):  # check for empty cells
+        return False
+    for unit in unitlist:
+        singles = [ values[peer] for peer in unit if len(values[peer]) == 1 ]
+        if len(singles) != len(set(singles)):
+            return False
+    return True
+
+def is_solved(values):
+    return is_singleton(values) and is_valid(values)
+
 
 
 def naked_twins(values):
@@ -53,8 +77,23 @@ def naked_twins(values):
     Pseudocode for this algorithm on github:
     https://github.com/udacity/artificial-intelligence/blob/master/Projects/1_Sudoku/pseudocode.md
     """
-    # TODO: Implement this function!
-    raise NotImplementedError
+    original = values.copy()
+    for unit in unitlist:
+        # Build inverted index: { value: [cells] }
+        twins = { original[cell]: [] for cell in unit }
+        for cell in unit:
+            twins[ original[cell] ].append(cell)
+
+        # Search for naked twins and eliminate
+        for value, cells in twins.items():
+            if len(value) == 2 and len(value) == len(cells):         # should also work with triplets or greater
+                for peer in unit:
+                    if peer in cells: continue                       # ignore self
+                    values[peer] = set(values[peer]) - set(value)
+                    values[peer] = "".join(sorted(values[peer]))     # cast back to string
+
+    # assert is_valid(values)
+    return values
 
 
 def eliminate(values):
@@ -73,8 +112,18 @@ def eliminate(values):
     dict
         The values dictionary with the assigned values eliminated from peers
     """
-    # TODO: Copy your code from the classroom to complete this function
-    raise NotImplementedError
+    original = values.copy()               # unit tests require not eliminating later values
+    for cell, value in original.items():
+        if len(value) != 1:  continue      # still has multiple choice
+        for peer in peers[cell]:
+            if peer == cell: continue      # unsure if peers includes cell
+            if value == values[peer]:
+                return original            # invalid grid
+            if value in values[peer]:
+                values[peer] = values[peer].replace(value, '')
+
+    # assert is_valid(values)
+    return values
 
 
 def only_choice(values):
@@ -97,8 +146,17 @@ def only_choice(values):
     -----
     You should be able to complete this function by copying your code from the classroom
     """
-    # TODO: Copy your code from the classroom to complete this function
-    raise NotImplementedError
+    for unit in unitlist:
+        for cell in unit:
+            if len(values[cell]) == 1: continue   # already solved
+            options   = set(values[cell])
+            others    = set.union(*[ set(values[peer]) for peer in unit if peer != cell ])
+            remaining = options - others
+            if len(options) == 1:
+                values[cell] = "".join(sorted(remaining))  # cast to string
+
+    # assert is_valid(values)
+    return values
 
 
 def reduce_puzzle(values):
@@ -113,13 +171,21 @@ def reduce_puzzle(values):
     -------
     dict or False
         The values dictionary after continued application of the constraint strategies
-        no longer produces any changes, or False if the puzzle is unsolvable 
+        no longer produces any changes, or False if the puzzle is unsolvable
     """
-    # TODO: Copy your code from the classroom and modify it to complete this function
-    raise NotImplementedError
+    original = values.copy()               # unit tests require not eliminating later values
+
+    values = eliminate(values)
+    values = only_choice(values)
+    values = naked_twins(values)
+
+    if hash_values(values) != hash_values(original):
+        return reduce_puzzle(values)
+    else:
+        return values
 
 
-def search(values):
+def search(values, verbose=False):
     """Apply depth first search to solve Sudoku puzzles in order to solve puzzles
     that cannot be solved by repeated reduction alone.
 
@@ -138,8 +204,31 @@ def search(values):
     You should be able to complete this function by copying your code from the classroom
     and extending it to call the naked twins strategy.
     """
-    # TODO: Copy your code from the classroom to complete this function
-    raise NotImplementedError
+    values = reduce_puzzle(values)
+    if verbose: display(values)
+
+    if values == False:      return False   # unsolvable
+    if is_solved(values):    return values  # solved
+    if is_singleton(values): return False   # invalid solutions
+
+    unsolved = sorted([
+        (len(value), cell, values[cell])
+        for cell, value in values.items()
+        if len(value) > 1
+    ])
+    length, cell, options = min(unsolved)
+    for option in options:
+        if verbose: print('solve', cell, option, options)
+        clone       = values.copy()
+        clone[cell] = option
+
+        if not is_valid(clone): continue
+        solution    = search(clone)
+        if solution:
+            return solution
+    else:
+        return False
+
 
 
 def solve(grid):
@@ -149,7 +238,7 @@ def solve(grid):
     ----------
     grid(string)
         a string representing a sudoku grid.
-        
+
         Ex. '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
 
     Returns
