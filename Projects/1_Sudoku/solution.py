@@ -209,13 +209,14 @@ def search(values, verbose=False):
 
     if values == False:      return False   # unsolvable
     if is_solved(values):    return values  # solved
-    if is_singleton(values): return False   # invalid solutions
 
     unsolved = sorted([
         (len(value), cell, values[cell])
         for cell, value in values.items()
         if len(value) > 1
     ])
+    if len(unsolved) == 0:   return False   # BUGFIX: udacity submit unit tests
+
     length, cell, options = min(unsolved)
     for option in options:
         if verbose: print('solve', cell, option, options)
