@@ -1,5 +1,6 @@
 
 from utils import *
+import re
 
 
 row_units    = [cross(r, cols) for r in rows]
@@ -89,8 +90,14 @@ def naked_twins(values):
             if len(value) == 2 and len(value) == len(cells):         # should also work with triplets or greater
                 for peer in unit:
                     if peer in cells: continue                       # ignore self
+
+                    ### Optimize: Slower (10ms)
+                    ### DOCS: https://stackoverflow.com/questions/3939361/remove-specific-characters-from-a-string-in-python
+                    # values[peer] = values.get(peer,'').translate({ord(c): None for c in value})
+
+                    ### Optimize: Faster (7ms)
                     values[peer] = set(values[peer]) - set(value)
-                    values[peer] = "".join(sorted(values[peer]))     # cast back to string
+                    values[peer] = "".join(values[peer])     # cast back to string
 
     # assert is_valid(values)
     return values
@@ -149,8 +156,14 @@ def only_choice(values):
     for unit in unitlist:
         for cell in unit:
             if len(values[cell]) == 1: continue   # already solved
+            ### Optimize: Slower (39ms)
+            # options   = values[cell]
+            # others    = set("".join([ values[peer] for peer in unit if peer != cell ]))
+            # remaining = options.translate({ord(c): None for c in others})
+
+            ### Optimize: Faster (33ms)
             options   = set(values[cell])
-            others    = set.union(*[ set(values[peer]) for peer in unit if peer != cell ])
+            others    = set([ values[peer] for peer in unit if peer != cell ])
             remaining = options - others
             if len(options) == 1:
                 values[cell] = "".join(sorted(remaining))  # cast to string
