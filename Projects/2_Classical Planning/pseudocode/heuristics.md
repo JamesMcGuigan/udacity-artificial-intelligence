@@ -15,8 +15,8 @@ The level cost is a helper function used by MaxLevel and LevelSum. The level cos
 &emsp;&emsp;_graph_, a leveled planning graph  
 &emsp;&emsp;_goal_, a literal that is a goal in the planning graph  
   
-&emsp;**for each** _layer<sub>i_ in _graph.literalLayers_ **do**  
-&emsp;&emsp;**if** _goal_ in _layer<sub>i_ **then return** i  
+&emsp;**for each** _layer<sub>i_</sub> in _graph.literalLayers_ **do**  
+&emsp;&emsp;**if** _goal_ in _layer<sub>i_</sub> **then return** i  
 
 ---
 
@@ -70,16 +70,16 @@ The level cost is a helper function used by MaxLevel and LevelSum. The level cos
 &emsp;&emsp;_graph_, an initialized (unleveled) planning graph  
   
 &emsp;_graph_.fill()  _/* fill the planning graph until it levels off */_  
-&emsp;**for** _layer<sub>i_ in _graph.literalLayers_ **do**  
+&emsp;**for** _layer<sub>i_</sub> in _graph.literalLayers_ **do**  
 &emsp;&emsp;_allGoalsMet_ <- _true_  
 &emsp;&emsp;**for each** _goal_ in _graph.goalLiterals_ **do**  
-&emsp;&emsp;&emsp;**if** _goal_ not in _layer<sub>i_ **then** _allGoalsMet_ <- _false_  
+&emsp;&emsp;&emsp;**if** _goal_ not in _layer<sub>i_</sub> **then** _allGoalsMet_ <- _false_  
 &emsp;&emsp;**if** not _allGoalsMet_ **then** continue  
   
 &emsp;&emsp;_goalsAreMutex_ <- _false_  
 &emsp;&emsp;**for each** _goalA_ in _graph.goalLiterals_ **do**  
 &emsp;&emsp;&emsp;**for each** _goalB_ in _graph.goalLiterals_ **do**  
-&emsp;&emsp;&emsp;&emsp;**if** _layer<sub>i_.isMutex(_goalA_, _goalB_) **then** _goalsAreMutex_ <- _true_  
+&emsp;&emsp;&emsp;&emsp;**if** _layer<sub>i_</sub>.isMutex(_goalA_, _goalB_) **then** _goalsAreMutex_ <- _true_  
 &emsp;&emsp;**if** not _goalsAreMutex_ **then return** _i_
 
 ---
