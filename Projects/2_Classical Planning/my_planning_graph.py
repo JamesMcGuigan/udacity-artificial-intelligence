@@ -6,6 +6,7 @@ from aimacode.utils import expr
 from layers import BaseActionLayer, BaseLiteralLayer, makeNoOp, make_node
 
 
+
 class ActionLayer(BaseActionLayer):
 
     def _inconsistent_effects(self, actionA, actionB):
@@ -32,7 +33,6 @@ class ActionLayer(BaseActionLayer):
             return True
         else:
             return False
-
 
 
     def _interference(self, actionA, actionB):
@@ -76,6 +76,7 @@ class ActionLayer(BaseActionLayer):
         return False
 
 
+
 class LiteralLayer(BaseLiteralLayer):
 
     def _inconsistent_support(self, literalA, literalB):
@@ -89,16 +90,7 @@ class LiteralLayer(BaseLiteralLayer):
         --------
         layers.BaseLayer.parent_layer
         """
-        # TODO: implement this function
-        # self.parent_layer.update_mutexes()  # BUGFIX: causes infinite loop
-        # AssertionError: False is not true :  'Go(here,)' and '~(NoOp::At(here,),)' should be mutually exclusive by inconsistent effects. At least one pair of effects from [At(here)] and [~At(here)] are logical opposites.
-        # for A, B in [ [literalA, literalB], [literalB, literalA] ]:
-        #     if A not in
-        # print(literalA.__str__(), literalB.__str__())
-        # print('self.parents', literalA, self.parents[literalA])
-        # for literal, actions in self.parent_layer.children.items():
-        #     print('self.parent_layer', literal, actions)
-
+        # DONE: implement this function
         all_are_mutex = True
         actionsA = self.parents[literalA]
         actionsB = self.parents[literalB]
@@ -114,9 +106,10 @@ class LiteralLayer(BaseLiteralLayer):
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
 
-        # Compare both ways round to simplify logic
+        # DONE: implement this function
         output = literalA == ~literalB
         return output
+
 
 
 class PlanningGraph:
@@ -261,6 +254,7 @@ class PlanningGraph:
         # TODO: implement maxlevel heuristic
         # raise NotImplementedError
 
+
     def h_setlevel(self):
         """ Calculate the set level heuristic for the planning graph
 
@@ -321,6 +315,7 @@ class PlanningGraph:
                     return n
         return 0
 
+
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #
     ##############################################################################
@@ -344,6 +339,7 @@ class PlanningGraph:
             self._extend()
             maxlevels -= 1
         return self
+
 
     def _extend(self):
         """ Extend the planning graph by adding both a new action layer and a new literal layer
