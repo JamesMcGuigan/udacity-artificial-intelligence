@@ -19,17 +19,27 @@ class ActionLayer(BaseActionLayer):
         --------
         layers.ActionNode
         """
-        # TODO: implement this function
-        raise NotImplementedError
+        # DONE: implement this function
+        if actionA not in self.children or actionB not in self.children:
+            return False
+
+        resultsA = self.children[actionA]
+        resultsB = self.children[actionB]
+        resultsB_inverted = [ ~B for B in resultsB ]
+        if resultsA == resultsB_inverted:
+            return True
+        else:
+            return False
+
 
 
     def _interference(self, actionA, actionB):
-        """ Return True if the effects of either action negate the preconditions of the other 
+        """ Return True if the effects of either action negate the preconditions of the other
 
         Hints:
             (1) `~Literal` can be used to logically negate a literal
             (2) `self.parents` contains a map from actions to preconditions
-        
+
         See Also
         --------
         layers.ActionNode
@@ -43,7 +53,7 @@ class ActionLayer(BaseActionLayer):
         Hints:
             (1) `self.parent_layer` contains a reference to the previous literal layer
             (2) `self.parents` contains a map from actions to preconditions
-        
+
         See Also
         --------
         layers.ActionNode
@@ -71,8 +81,15 @@ class LiteralLayer(BaseLiteralLayer):
 
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
-        # TODO: implement this function
-        raise NotImplementedError
+
+        # Compare both ways round to simplify logic
+        for A, B in [ [literalA, literalB], [literalB, literalA] ]:
+            if A.op == B.op == '~':
+                return False
+            if A.op != '~' and A.args[0].op == B.op:
+                return True
+        else:
+            return False
 
 
 class PlanningGraph:
@@ -101,7 +118,7 @@ class PlanningGraph:
         # make no-op actions that persist every literal to the next layer
         no_ops = [make_node(n, no_op=True) for n in chain(*(makeNoOp(s) for s in problem.state_map))]
         self._actionNodes = no_ops + [make_node(a) for a in problem.actions_list]
-        
+
         # initialize the planning graph by finding the literals that are in the
         # first layer and finding the actions they they should be connected to
         literals = [s if f else ~s for f, s in zip(state, problem.state_map)]
@@ -118,7 +135,7 @@ class PlanningGraph:
         level at which the literal first appears in the planning graph. Note
         that the level cost is **NOT** the minimum number of actions to
         achieve a single goal literal.
-        
+
         For example, if Goal_1 first appears in level 0 of the graph (i.e.,
         it is satisfied at the root of the planning graph) and Goal_2 first
         appears in level 3, then the levelsum is 0 + 3 = 3.
@@ -224,7 +241,7 @@ class PlanningGraph:
         negative literals in the leaf nodes of the parent literal level.
 
         The new literal layer contains all literals that could result from taking each possible
-        action in the NEW action layer. 
+        action in the NEW action layer.
         """
         if self._is_leveled: return
 
