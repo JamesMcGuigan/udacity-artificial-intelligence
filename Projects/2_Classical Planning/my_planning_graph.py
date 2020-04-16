@@ -1,4 +1,4 @@
-
+import itertools
 from itertools import chain, combinations
 from aimacode.planning import Action
 from aimacode.utils import expr
@@ -23,10 +23,12 @@ class ActionLayer(BaseActionLayer):
         if actionA not in self.children or actionB not in self.children:
             return False
 
-        resultsA = self.children[actionA]
-        resultsB = self.children[actionB]
-        resultsB_inverted = [ ~B for B in resultsB ]
-        if resultsA == resultsB_inverted:
+        resultsA  = self.children[actionA]
+        resultsB  = self.children[actionB]
+        invertedA = { ~A for A in resultsA }
+        invertedB = { ~B for B in resultsB }
+
+        if resultsA == invertedB or resultsB == invertedA:
             return True
         else:
             return False
@@ -44,8 +46,16 @@ class ActionLayer(BaseActionLayer):
         --------
         layers.ActionNode
         """
-        # TODO: implement this function
-        raise NotImplementedError
+        # DONE: implement this function
+        for A, B in [ (actionA,actionB), (actionB,actionA) ]:
+            if A not in self.parents.keys() or B not in self.parents.keys():
+                return False
+            B_preconditions  = { ~E for E in self.parents[B] }
+            if A.effects == B_preconditions:
+                return True
+        else:
+            return False
+
 
     def _competing_needs(self, actionA, actionB):
         """ Return True if any preconditions of the two actions are pairwise mutex in the parent layer
@@ -59,8 +69,11 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         layers.BaseLayer.parent_layer
         """
-        # TODO: implement this function
-        raise NotImplementedError
+        # DONE: implement this function
+        for actionA,actionB in itertools.product( actionA.preconditions, actionB.preconditions ):
+            if self.parent_layer.is_mutex(actionA, actionB):
+                return True
+        return False
 
 
 class LiteralLayer(BaseLiteralLayer):
@@ -77,19 +90,33 @@ class LiteralLayer(BaseLiteralLayer):
         layers.BaseLayer.parent_layer
         """
         # TODO: implement this function
-        raise NotImplementedError
+        # self.parent_layer.update_mutexes()  # BUGFIX: causes infinite loop
+        # AssertionError: False is not true :  'Go(here,)' and '~(NoOp::At(here,),)' should be mutually exclusive by inconsistent effects. At least one pair of effects from [At(here)] and [~At(here)] are logical opposites.
+        # for A, B in [ [literalA, literalB], [literalB, literalA] ]:
+        #     if A not in
+        # print(literalA.__str__(), literalB.__str__())
+        # print('self.parents', literalA, self.parents[literalA])
+        # for literal, actions in self.parent_layer.children.items():
+        #     print('self.parent_layer', literal, actions)
+
+        all_are_mutex = True
+        actionsA = self.parents[literalA]
+        actionsB = self.parents[literalB]
+        for actionA in actionsA:
+            for actionB in actionsB:
+                if not self.parent_layer.is_mutex(actionA, actionB):
+                    all_are_mutex = False
+                    break
+            if not all_are_mutex: break
+        return all_are_mutex
+
 
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
 
         # Compare both ways round to simplify logic
-        for A, B in [ [literalA, literalB], [literalB, literalA] ]:
-            if A.op == B.op == '~':
-                return False
-            if A.op != '~' and A.args[0].op == B.op:
-                return True
-        else:
-            return False
+        output = literalA == ~literalB
+        return output
 
 
 class PlanningGraph:
@@ -151,9 +178,25 @@ class PlanningGraph:
         See Also
         --------
         Russell-Norvig 10.3.1 (3rd Edition)
+
+        function LevelSum(graph) returns a value
+          inputs:
+            graph, an initialized (unleveled) planning graph
+
+          costs = []
+          graph.fill() /* fill the planning graph until it levels off */
+          for each goal in graph.goalLiterals do
+            costs.append(LevelCost(graph, goal))
+          return sum(costs)
         """
         # TODO: implement this function
         raise NotImplementedError
+        costs = []
+        self.fill()
+        for goal in self.goal:
+            costs.append(1)  # TODO: find LevelCost(graph, goal)
+        return len(costs) and sum(costs) or 0
+
 
     def h_maxlevel(self):
         """ Calculate the max level heuristic for the planning graph
@@ -178,12 +221,45 @@ class PlanningGraph:
         --------
         Russell-Norvig 10.3.1 (3rd Edition)
 
+
+        function MaxLevel(graph) returns a value
+          inputs:
+            graph, an initialized (unleveled) planning graph
+
+          costs = []
+          graph.fill() /* fill the planning graph until it levels off */
+          for each goal in graph.goalLiterals do
+            costs.append(LevelCost(graph, goal))
+          return max(costs)
+
+
+        # Improving Efficiency
+        function MaxLevel(graph) returns a value
+          inputs: graph, an initialized (unleveled) planning graph
+
+          i <- 0
+          loop until graph.isLeveled do
+            allGoalsMet <- true
+            for each goal in graph.goalLiterals do
+              if goal not in graph.getLastLiteralLayer() then allGoalsMet <- false
+            if allGoalsMet then return i
+            else graph.extend() /* add the next literal layer */
+            i <- i + 1
+
+
         Notes
         -----
         WARNING: you should expect long runtimes using this heuristic with A*
         """
+        costs = []
+        self.fill()
+        for goal in self.goal:
+            cost = 1  # TODO: LevelCost(graph, goal)
+            costs.append(cost)
+        return len(costs) and sum(costs) or 0
+
         # TODO: implement maxlevel heuristic
-        raise NotImplementedError
+        # raise NotImplementedError
 
     def h_setlevel(self):
         """ Calculate the set level heuristic for the planning graph
@@ -203,12 +279,47 @@ class PlanningGraph:
         --------
         Russell-Norvig 10.3.1 (3rd Edition)
 
+        function SetLevel(graph) returns a value
+          inputs:
+            graph, an initialized (unleveled) planning graph
+
+          graph.fill() /* fill the planning graph until it levels off */
+          for _layeri in graph.literalLayers do
+            allGoalsMet <- true
+            for each goal in graph.goalLiterals do
+              if goal not in _layeri then allGoalsMet <- false
+            if not allGoalsMet then continue
+
+            goalsAreMutex <- false
+            for each goalA in graph.goalLiterals do
+              for each goalB in graph.goalLiterals do
+                if _layeri.isMutex(goalA, goalB) then goalsAreMutex <- true
+              if not goalsAreMutex then return i
+
         Notes
         -----
         WARNING: you should expect long runtimes using this heuristic on complex problems
         """
         # TODO: implement setlevel heuristic
-        raise NotImplementedError
+        self.fill()
+        for n, layer in enumerate(self.literal_layers):
+            all_goals_met = True
+            for goal in self.goal:
+                if goal not in layer:
+                    all_goals_met = False
+                    break
+            if not all_goals_met: continue
+
+            goals_are_mutex = False
+            for goal_A in self.goal:
+                for goal_B in self.goal:
+                    if goal_A == goal_B: continue
+                    if layer.is_mutex(goal_A, goal_B):
+                        goals_are_mutex = True
+                        break
+                if not goals_are_mutex:
+                    return n
+        return 0
 
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #
