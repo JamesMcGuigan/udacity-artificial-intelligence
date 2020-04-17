@@ -1,5 +1,4 @@
-import itertools
-from itertools import chain, combinations
+from itertools import chain, combinations, product
 from aimacode.planning import Action
 from aimacode.utils import expr
 
@@ -21,18 +20,10 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # DONE: implement this function
-        if actionA not in self.children or actionB not in self.children:
-            return False
-
-        resultsA  = self.children[actionA]
-        resultsB  = self.children[actionB]
-        invertedA = { ~A for A in resultsA }
-        invertedB = { ~B for B in resultsB }
-
-        if resultsA == invertedB or resultsB == invertedA:
-            return True
-        else:
-            return False
+        for effectA, effectB in product(actionA.effects, actionB.effects):
+            if effectA == ~effectB:
+                return True
+        return False
 
 
     def _interference(self, actionA, actionB):
@@ -48,13 +39,10 @@ class ActionLayer(BaseActionLayer):
         """
         # DONE: implement this function
         for A, B in [ (actionA,actionB), (actionB,actionA) ]:
-            if A not in self.parents.keys() or B not in self.parents.keys():
-                return False
-            B_preconditions  = { ~E for E in self.parents[B] }
-            if A.effects == B_preconditions:
-                return True
-        else:
-            return False
+            for effectA, preconditionB in product(A.effects, B.preconditions):
+                if effectA == ~preconditionB:
+                    return True
+        return False
 
 
     def _competing_needs(self, actionA, actionB):
@@ -70,8 +58,8 @@ class ActionLayer(BaseActionLayer):
         layers.BaseLayer.parent_layer
         """
         # DONE: implement this function
-        for actionA,actionB in itertools.product( actionA.preconditions, actionB.preconditions ):
-            if self.parent_layer.is_mutex(actionA, actionB):
+        for preconditionA, preconditionB in product(actionA.preconditions, actionB.preconditions):
+            if self.parent_layer.is_mutex(preconditionA, preconditionB):
                 return True
         return False
 
@@ -91,28 +79,23 @@ class LiteralLayer(BaseLiteralLayer):
         layers.BaseLayer.parent_layer
         """
         # DONE: implement this function
-        all_are_mutex = True
-        actionsA = self.parents[literalA]
-        actionsB = self.parents[literalB]
-        for actionA in actionsA:
-            for actionB in actionsB:
-                if not self.parent_layer.is_mutex(actionA, actionB):
-                    all_are_mutex = False
-                    break
-            if not all_are_mutex: break
-        return all_are_mutex
+        for actionA, actionB in product(self.parents[literalA], self.parents[literalB]):
+            if not self.parent_layer.is_mutex(actionA, actionB):
+                return False
+        return True
 
 
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
 
         # DONE: implement this function
-        output = literalA == ~literalB
+        output = literalA == ~literalB and ~literalA == literalB
         return output
 
 
 
 class PlanningGraph:
+
     def __init__(self, problem, state, serialize=True, ignore_mutexes=False):
         """
         Parameters
@@ -130,8 +113,8 @@ class PlanningGraph:
             _should_ be serialized if the planning graph is being used to estimate
             a heuristic
         """
-        self._serialize = serialize
-        self._is_leveled = False
+        self._serialize      = serialize
+        self._is_leveled     = False
         self._ignore_mutexes = ignore_mutexes
         self.goal = set(problem.goal)
 
@@ -141,11 +124,19 @@ class PlanningGraph:
 
         # initialize the planning graph by finding the literals that are in the
         # first layer and finding the actions they they should be connected to
-        literals = [s if f else ~s for f, s in zip(state, problem.state_map)]
-        layer = LiteralLayer(literals, ActionLayer(), self._ignore_mutexes)
+        literals = [ s if f else ~s for f, s in zip(state, problem.state_map) ]
+        layer    = LiteralLayer(literals, ActionLayer(), self._ignore_mutexes)
         layer.update_mutexes()
         self.literal_layers = [layer]
         self.action_layers = []
+
+
+    def levelcost(self, goal):
+        for level, layer in enumerate(self.literal_layers):
+            if goal in layer:
+                return level
+        return len(self.literal_layers)
+
 
     def h_levelsum(self):
         """ Calculate the level sum heuristic for the planning graph
@@ -183,11 +174,11 @@ class PlanningGraph:
           return sum(costs)
         """
         # TODO: implement this function
-        raise NotImplementedError
         costs = []
         self.fill()
         for goal in self.goal:
-            costs.append(1)  # TODO: find LevelCost(graph, goal)
+            cost = self.levelcost(goal)
+            costs.append( cost )
         return len(costs) and sum(costs) or 0
 
 
@@ -247,12 +238,10 @@ class PlanningGraph:
         costs = []
         self.fill()
         for goal in self.goal:
-            cost = 1  # TODO: LevelCost(graph, goal)
-            costs.append(cost)
-        return len(costs) and sum(costs) or 0
-
-        # TODO: implement maxlevel heuristic
-        # raise NotImplementedError
+            for index, layer in enumerate(self.literal_layers):
+                cost = self.levelcost(goal)
+                costs.append(cost)
+        return len(costs) and max(costs) or 0
 
 
     def h_setlevel(self):
@@ -294,26 +283,20 @@ class PlanningGraph:
         -----
         WARNING: you should expect long runtimes using this heuristic on complex problems
         """
-        # TODO: implement setlevel heuristic
+        # DONE: implement setlevel heuristic
         self.fill()
-        for n, layer in enumerate(self.literal_layers):
-            all_goals_met = True
-            for goal in self.goal:
-                if goal not in layer:
-                    all_goals_met = False
-                    break
+        for index, layer in enumerate(self.literal_layers):
+            all_goals_met = self.goal.issubset(layer)
             if not all_goals_met: continue
 
             goals_are_mutex = False
-            for goal_A in self.goal:
-                for goal_B in self.goal:
-                    if goal_A == goal_B: continue
-                    if layer.is_mutex(goal_A, goal_B):
-                        goals_are_mutex = True
-                        break
-                if not goals_are_mutex:
-                    return n
-        return 0
+            for goal_A, goal_B in combinations(self.goal, 2):
+                if layer.is_mutex(goal_A, goal_B):
+                    goals_are_mutex = True
+                    break
+            if not goals_are_mutex:
+                return index
+        return len(self.literal_layers)
 
 
     ##############################################################################
