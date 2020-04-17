@@ -61,6 +61,8 @@ $ python run_search.py -m
   - You can also run specific problems & search algorithms - e.g., to run breadth first search and UCS on problems 1 and 2:
 ```
 $ python run_search.py -p 1 2 -s 1 2
+$ parallel -v -k "python3 ./run_search.py -p {1} -s {2}" ::: `seq 1 4` ::: `seq 1 11` | tee run_search.log
+ 
 ```
 
 
