@@ -18,6 +18,4 @@ dependencies:
 - tqdm=4.19.4
 - pip:
   - udacity-pa>=0.2
-  - pygame # ==1.9.6
   - z3-solver
-  # - jupyterlab
