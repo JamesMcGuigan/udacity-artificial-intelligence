@@ -129,11 +129,11 @@ class BaseLayer(MutableSet):
             See _ignore_mutexes attribute
         """
         super().__init__()
-        self.__store = set(iter(items))
-        self.parents = defaultdict(set)
+        self.__store  = set(iter(items))
+        self.parents  = defaultdict(set)
         self.children = defaultdict(set)
         self._mutexes = defaultdict(set)
-        self.parent_layer = parent_layer
+        self.parent_layer    = parent_layer
         self._ignore_mutexes = ignore_mutexes
 
     def __contains__(self, item):
@@ -168,12 +168,13 @@ class BaseLayer(MutableSet):
 
 
 class BaseActionLayer(BaseLayer):
+
     def __init__(self, actions=[], parent_layer=None, serialize=True, ignore_mutexes=False):
         super().__init__(actions, parent_layer, ignore_mutexes)
-        self._serialize=serialize
+        self._serialize = serialize
         if isinstance(actions, BaseActionLayer):
-            self.parents.update({k: set(v) for k, v in actions.parents.items()})
-            self.children.update({k: set(v) for k, v in actions.children.items()})
+            self.parents.update({  k: set(v) for k, v in actions.parents.items()  })
+            self.children.update({ k: set(v) for k, v in actions.children.items() })
 
     def update_mutexes(self):
         for actionA, actionB in combinations(iter(self), 2):
