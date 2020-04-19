@@ -41,3 +41,5 @@ Seq	Host	Starttime	JobRuntime	Send	Receive	Exitval	Signal	Command
 40	:	1587259531.127	   704.597	0	676	0	0	python3 ./run_search.py -p 4 -s 7
 41	:	1587260235.727	    63.865	0	490	0	0	python3 ./run_search.py -p 4 -s 8
 42	:	1587260299.597	  2858.084	0	509	0	0	python3 ./run_search.py -p 4 -s 9
+43	:	1587260522.286	 49013.800	0	491	0	0	python3 ./run_search.py -p 4 -s 10
+44	:	1587261080.532	 58019.921	0	490	0	0	python3 ./run_search.py -p 4 -s 11
