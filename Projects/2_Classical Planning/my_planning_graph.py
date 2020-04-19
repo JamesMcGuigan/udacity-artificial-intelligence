@@ -8,6 +8,8 @@ from layers import BaseActionLayer, BaseLiteralLayer, makeNoOp, make_node
 
 class ActionLayer(BaseActionLayer):
 
+    # Profiler: pypy3 ./run_search.py -p 2 -s 9 | 19,517,834 callcount | 18169ms (28%) -> 4525ms (24%) with caching (4x speedup)
+    _inconsistent_effects_cache = {}
     def _inconsistent_effects(self, actionA, actionB):
         """ Return True if an effect of one action negates an effect of the other
 
@@ -20,12 +22,20 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # DONE: implement this function
+        hash = (actionA,actionB)
+        if hash in self._inconsistent_effects_cache:
+            return self._inconsistent_effects_cache[hash]
+
         for effectA, effectB in product(actionA.effects, actionB.effects):
             if effectA == ~effectB:
+                self._inconsistent_effects_cache[hash] = True
                 return True
+        self._inconsistent_effects_cache[hash] = False
         return False
 
 
+    # Profiler: pypy3 ./run_search.py -p 2 -s 9 | 18,866,801 callcount | 34567ms (36%) -> 4229ms (22.6%) with caching (8x speedup)
+    _interference_cache = {}
     def _interference(self, actionA, actionB):
         """ Return True if the effects of either action negate the preconditions of the other
 
@@ -38,10 +48,16 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # DONE: implement this function
+        hash = (actionA,actionB)
+        if hash in self._interference_cache:  # reversed check slows things down
+            return self._interference_cache[hash]
+
         for A, B in [ (actionA,actionB), (actionB,actionA) ]:
             for effectA, preconditionB in product(A.effects, B.preconditions):
                 if effectA == ~preconditionB:
+                    self._interference_cache[hash] = True
                     return True
+        self._interference_cache[hash] = False
         return False
 
 
