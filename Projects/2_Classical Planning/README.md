@@ -59,11 +59,19 @@ $ python run_search.py -m
 ```
 
   - You can also run specific problems & search algorithms - e.g., to run breadth first search and UCS on problems 1 and 2:
+```bash
+python3 run_search.py -p 1 2 -s 1 2
+pypy3   run_search.py -p 1 2 -s 1 2
 ```
-$ python run_search.py -p 1 2 -s 1 2
-$ parallel -v -k "python3 ./run_search.py -p {1} -s {2}" ::: `seq 1 4` ::: `seq 1 11` | tee run_search.log
- 
+
+Or run all everything
+- BUG: https://youtrack.jetbrains.com/issue/IDEA-238137
+```bash
+time parallel -v -k --joblog ./logs/run_search.python3.joblog "python3 ./run_search.py -p {1} -s {2} | cat" ::: `seq 1 4` ::: `seq 1 11` | tee ./logs/run_search.python3.log
+time parallel -v -k --joblog ./logs/run_search.pypy3.joblog   "pypy3   ./run_search.py -p {1} -s {2} | cat" ::: `seq 1 4` ::: `seq 1 11` | tee ./logs/run_search.pypy3.log
 ```
+
+
 
 
 ### Experiment with the planning algorithms
