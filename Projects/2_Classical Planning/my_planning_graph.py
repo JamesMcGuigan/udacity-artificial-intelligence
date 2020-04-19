@@ -27,7 +27,7 @@ class ActionLayer(BaseActionLayer):
             return self._inconsistent_effects_cache[hash]
 
         for effectA, effectB in product(actionA.effects, actionB.effects):
-            if effectA == ~effectB:
+            if effectA == ~effectB or ~effectA == effectB:
                 self._inconsistent_effects_cache[hash] = True
                 return True
         self._inconsistent_effects_cache[hash] = False
