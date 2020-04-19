@@ -1,9 +1,9 @@
+from typing import List, Set
+
 from itertools import chain, combinations, product
-from aimacode.planning import Action
-from aimacode.utils import expr
 
+from aimacode.utils import Expr
 from layers import BaseActionLayer, BaseLiteralLayer, makeNoOp, make_node
-
 
 
 class ActionLayer(BaseActionLayer):
@@ -144,7 +144,7 @@ class PlanningGraph:
         layer    = LiteralLayer(literals, ActionLayer(), self._ignore_mutexes)
         layer.update_mutexes()
         self.literal_layers = [layer]
-        self.action_layers = []
+        self.action_layers  = []
 
 
     def levelcost(self, goal):
@@ -154,7 +154,38 @@ class PlanningGraph:
         return len(self.literal_layers)
 
 
-    def h_levelsum(self):
+    def levelcosts(self, optimized=True) -> List[int]:
+        if not optimized:
+            self.fill()
+
+        costs = []
+        remaining_goals = self.goal.copy()
+        index = -1
+        while True:
+            index += 1
+
+            # Extend graph if required
+            if index >= len(self.literal_layers):
+                if not self._is_leveled:
+                    self._extend()
+                else:  # We are out of levels
+                    for goal in remaining_goals:
+                        costs.append(index)  # Assume maximum cost
+                    break
+
+            layer = self.literal_layers[index]
+            for goal in remaining_goals.copy():
+                if goal in layer:
+                    costs.append( index )
+                    remaining_goals -= {goal}
+
+            if not remaining_goals:
+                break
+
+        return costs
+
+
+    def h_levelsum(self, optimized=True) -> int:
         """ Calculate the level sum heuristic for the planning graph
 
         The level sum is the sum of the level costs of all the goal literals
@@ -189,16 +220,12 @@ class PlanningGraph:
             costs.append(LevelCost(graph, goal))
           return sum(costs)
         """
-        # TODO: implement this function
-        costs = []
-        self.fill()
-        for goal in self.goal:
-            cost = self.levelcost(goal)
-            costs.append( cost )
+        # DONE: implement this function
+        costs = self.levelcosts(optimized=optimized)
         return len(costs) and sum(costs) or 0
 
 
-    def h_maxlevel(self):
+    def h_maxlevel(self, optimized=True) -> int:
         """ Calculate the max level heuristic for the planning graph
 
         The max level is the largest level cost of any single goal fluent.
@@ -251,16 +278,11 @@ class PlanningGraph:
         -----
         WARNING: you should expect long runtimes using this heuristic with A*
         """
-        costs = []
-        self.fill()
-        for goal in self.goal:
-            for index, layer in enumerate(self.literal_layers):
-                cost = self.levelcost(goal)
-                costs.append(cost)
+        costs = self.levelcosts(optimized=optimized)
         return len(costs) and max(costs) or 0
 
 
-    def h_setlevel(self):
+    def h_setlevel(self, optimized=True):
         """ Calculate the set level heuristic for the planning graph
 
         The set level of a planning graph is the first level where all goals
@@ -300,19 +322,40 @@ class PlanningGraph:
         WARNING: you should expect long runtimes using this heuristic on complex problems
         """
         # DONE: implement setlevel heuristic
-        self.fill()
-        for index, layer in enumerate(self.literal_layers):
-            all_goals_met = self.goal.issubset(layer)
-            if not all_goals_met: continue
 
-            goals_are_mutex = False
-            for goal_A, goal_B in combinations(self.goal, 2):
-                if layer.is_mutex(goal_A, goal_B):
-                    goals_are_mutex = True
-                    break
+        if not optimized:
+            self.fill()
+
+        index = -1
+        while True:
+            index += 1
+
+            # Extend graph if required
+            if index >= len(self.literal_layers):
+                if self._is_leveled: break  # We are out of levels
+                self._extend()
+
+            layer = self.literal_layers[index]
+
+            all_goals_met = self.goal.issubset(layer)
+            if not all_goals_met:
+                continue
+
+            goals_are_mutex = self.goals_are_mutex(self.goal, layer)
             if not goals_are_mutex:
                 return index
-        return len(self.literal_layers)
+
+        return len(self.literal_layers)  # Assume maximum cost
+
+
+    def goals_are_mutex(self, goals: Set[Expr], layer: LiteralLayer) -> bool:
+        goals_are_mutex = False
+        for goal_A, goal_B in combinations(goals, 2):
+            if layer.is_mutex(goal_A, goal_B):
+                goals_are_mutex = True
+                break
+        return goals_are_mutex
+
 
 
     ##############################################################################
