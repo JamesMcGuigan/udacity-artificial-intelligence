@@ -48,7 +48,13 @@ $ python example_have_cake.py
   - `PlanningGraph.h_maxlevel`
   - `PlanningGraph.h_setlevel`
 
-After you complete each function, test your solution by running `python -m unittest -v`. **YOU SHOULD PASS EACH TEST CASE IN ORDER.** Some of the later test cases depend on correctly implementing the earlier functions, so working on the test cases out of order will be more difficult.
+After you complete each function, test your solution by running 
+
+```
+python -m unittest -v
+```
+
+**YOU SHOULD PASS EACH TEST CASE IN ORDER.** Some of the later test cases depend on correctly implementing the earlier functions, so working on the test cases out of order will be more difficult.
 
 
 3. Experiment with different search algorithms using the `run_search.py` script. (See example usage below.) The goal of your experiment is to understand the tradeoffs in speed, optimality, and complexity of progression search as problem size increases. You will record your results in a report (described below in [Report Requirements](#report-requirements)).
