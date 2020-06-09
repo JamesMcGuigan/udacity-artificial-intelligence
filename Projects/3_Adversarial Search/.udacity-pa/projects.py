@@ -11,6 +11,7 @@ filenames_all = [
     'run_backpropagation.py',
     'run_match_sync.py',
     'my_custom_player.py',
+    'kaggle_compile.py',
     'report.pdf',
     'report.ipynb',
 ] + glob.glob('agents/*.py') # + glob.glob('data/*.pickle')

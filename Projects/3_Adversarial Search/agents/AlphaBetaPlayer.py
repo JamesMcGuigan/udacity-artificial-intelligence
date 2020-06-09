@@ -6,7 +6,6 @@ from itertools import chain
 from operator import itemgetter
 
 from agents.DataSavePlayer import DataSavePlayer
-from isolation.isolation import Action
 
 
 
@@ -34,7 +33,7 @@ class AlphaBetaPlayer(DataSavePlayer):
 
     heuristic_fn         = 'heuristic_liberties'  # 'heuristic_liberties' | 'heuristic_area'
     heuristic_area_depth = 4                      # 4 seems to be the best number against LibertiesPlayer
-    heuristic_area_max   = len(Action) * 5        # 5 seems to be the best number against LibertiesPlayer
+    heuristic_area_max   = 8 * 5                  # 8=len(Actions) 5 seems to be the best number against LibertiesPlayer
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
