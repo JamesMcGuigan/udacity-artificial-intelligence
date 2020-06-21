@@ -135,7 +135,7 @@ class Dataset(namedtuple("_Dataset", "sentences keys vocab X tagset Y training_s
         wordset        = frozenset(chain(*[s.words for s in sentences.values()]))
         word_sequences = tuple([sentences[k].words for k in keys])
         tag_sequences  = tuple([sentences[k].tags for k in keys])
-        N = sum(1 for _ in chain(*(s.words for s in sentences.values())))
+        N              = sum(1 for _ in chain(*(s.words for s in sentences.values())))
 
         # split data into train/test sets
         _keys = list(keys)
